@@ -1,0 +1,40 @@
+
+name: Build JailbreakLab IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate project
+        run: xcodegen generate
+
+      - name: Compile for iPhone
+        run: |
+          xcodebuild \
+            -project JailbreakLab.xcodeproj \
+            -scheme JailbreakLab \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Create unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/JailbreakLab.app Payload/
+          zip -r JailbreakLab.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: JailbreakLab-IPA
+          path: JailbreakLab.ipa
